@@ -168,26 +168,29 @@ function renderMembers(data, root) {
   }
 }
 
+
 function renderCandidates(data, root) {
   const heading = element(
     'h3',
     '',
-    '2028 FEC Candidate Records'
+    `${data.electionYear} FEC Candidate Records`
   );
 
   root.append(heading);
 
   const candidates = data.candidates || [];
 
-  if (!candidates.length) {
-    root.append(element(
-      'p',
-      'micro',
-      'No matching 2028 FEC candidate records were returned. ' +
-      'This does not mean nobody is running.'
-    ));
-    return;
-  }
+  
+if (!candidates.length) {
+  root.append(element(
+    'p',
+    'micro',
+    `No matching ${data.electionYear} FEC candidate records were returned. ` +
+    'This does not mean nobody is running.'
+  ));
+  return;
+}
+
 
   root.append(element(
     'p',
@@ -342,11 +345,15 @@ $('lookup').addEventListener('click', async () => {
       const memberURL =
         `/.netlify/functions/representative?${query}`;
 
-      const candidateQuery = new URLSearchParams({
-        state,
-        district,
-        year: '2028'
-      });
+     
+const candidateQuery = new URLSearchParams({
+  state,
+  district,
+  year: $('electionYear').value
+});
+
+const candidateURL =
+  `/.netlify/functions/candidates?${candidateQuery}`;
 
       const candidateURL =
         `/.netlify/functions/candidates?${candidateQuery}`;
