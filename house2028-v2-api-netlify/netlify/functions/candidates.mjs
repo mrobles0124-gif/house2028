@@ -40,7 +40,7 @@ export default async (request) => {
     !/^(?:0|[1-9][0-9]?)$/.test(districtText) ||
     district > 99 ||
     !/^\d{4}$/.test(yearText) ||
-    year < 2028 ||
+    year < 2026 ||
     year > 2100 ||
     year % 2 !== 0
   ) {
