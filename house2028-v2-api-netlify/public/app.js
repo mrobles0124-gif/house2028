@@ -357,9 +357,6 @@ const candidateURL =
   `/.netlify/functions/candidates?${candidateQuery}`;
 
 
-      const candidateURL =
-        `/.netlify/functions/candidates?${candidateQuery}`;
-
       // Both requests run concurrently.
       // A failure in one does not automatically cancel the other.
       const [memberResult, candidateResult] =
