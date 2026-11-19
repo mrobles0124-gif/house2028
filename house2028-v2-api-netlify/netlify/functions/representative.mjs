@@ -27,6 +27,22 @@ export default async (request) => {
     const data = await response.json();
     const members = Array.isArray(data.members) ? data.members : [];
     
+if (u.searchParams.get('debug') === '1') {
+  return json({
+    requestedState: state,
+    requestedDistrict: Number(districtText),
+    returnedCount: members.length,
+    records: members.map(m => ({
+      name: m.name,
+      state: m.state,
+      district: m.district,
+      currentMember: m.currentMember,
+      terms: m.terms
+    }))
+  }, 200, { 'Cache-Control': 'no-store' });
+}
+
+    
 const requestedDistrict = Number(districtText);
 
 const current = members.filter(m => {
