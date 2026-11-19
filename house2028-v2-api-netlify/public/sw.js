@@ -1,5 +1,4 @@
-
-const CACHE = 'house2028-v3-static-1';
+const CACHE = 'house2028-v3-static-2';
 
 const ASSETS = [
   '/',
