@@ -27,42 +27,21 @@ export default async (request) => {
     const data = await response.json();
     const members = Array.isArray(data.members) ? data.members : [];
     
-if (u.searchParams.get('debug') === '1') {
-  return json({
-    requestedState: state,
-    requestedDistrict: Number(districtText),
-    returnedCount: members.length,
-    records: members.map(m => ({
-      name: m.name,
-      state: m.state,
-      district: m.district,
-      currentMember: m.currentMember,
-      terms: m.terms
-    }))
-  }, 200, { 'Cache-Control': 'no-store' });
-}
+  
 
-    
 const requestedDistrict = Number(districtText);
 
+// Congress.gov already receives currentMember=true.
+// Its response does not always include a currentMember field.
+// Filter the returned records by the exact requested district.
 const current = members.filter(m => {
-  // Only include representatives explicitly marked as current.
-  const isCurrent =
-    m.currentMember === true ||
-    String(m.currentMember).toLowerCase() === 'true';
-
-  // Match the state requested by the user.
-  const matchesState =
-    String(m.state || '').toUpperCase() === state;
-
-  // Match the exact congressional district.
-  const matchesDistrict =
-    Number(m.district) === requestedDistrict;
-
-  return isCurrent && matchesState && matchesDistrict;
+  return (
+    m.district !== null &&
+    m.district !== undefined &&
+    Number(m.district) === requestedDistrict
+  );
 });
 
-    // The API can include former representatives; display only entries identified as current.
     const result = current.map(m => ({
       bioguideId: String(m.bioguideId || ''),
       name: String(m.directOrderName || m.name || 'Name unavailable'),
