@@ -3,6 +3,9 @@ const STATES = new Set(
   'AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VA VT WA WV WI WY DC'.split(' ')
 );
 
+const MAX_PAGES = 5;
+const PER_PAGE = 100;
+
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -59,18 +62,6 @@ export default async (request) => {
     }, 503);
   }
 
-  const endpoint = new URL(
-    'https://api.open.fec.gov/v1/candidates/'
-  );
-
-  endpoint.searchParams.set('api_key', key);
-  endpoint.searchParams.set('office', 'H');
-  endpoint.searchParams.set('state', state);
-  endpoint.searchParams.set('district', String(district));
-  endpoint.searchParams.set('election_year', String(year));
-  endpoint.searchParams.set('per_page', '20');
-  endpoint.searchParams.set('page', '1');
-
   const controller = new AbortController();
   const timer = setTimeout(
     () => controller.abort(),
@@ -78,42 +69,95 @@ export default async (request) => {
   );
 
   try {
-    const response = await fetch(endpoint, {
-      signal: controller.signal,
-      headers: { Accept: 'application/json' }
-    });
+    const records = [];
+    let totalMatchingRecords = null;
+    let totalPages = 1;
+    let pagesFetched = 0;
 
-    if (!response.ok) {
-      return json({
-        error: 'FEC API request failed.',
-        upstreamStatus: response.status
-      }, 502);
+    for (let page = 1; page <= MAX_PAGES; page++) {
+      const endpoint = new URL(
+        'https://api.open.fec.gov/v1/candidates/'
+      );
+
+      endpoint.searchParams.set('api_key', key);
+      endpoint.searchParams.set('office', 'H');
+      endpoint.searchParams.set('state', state);
+      endpoint.searchParams.set('district', String(district));
+      endpoint.searchParams.set('election_year', String(year));
+      endpoint.searchParams.set('per_page', String(PER_PAGE));
+      endpoint.searchParams.set('page', String(page));
+
+      const response = await fetch(endpoint, {
+        signal: controller.signal,
+        headers: { Accept: 'application/json' }
+      });
+
+      if (!response.ok) {
+        return json({
+          error: 'FEC API request failed.',
+          upstreamStatus: response.status
+        }, 502);
+      }
+
+      const data = await response.json();
+
+      const results = Array.isArray(data.results)
+        ? data.results
+        : [];
+
+      records.push(...results);
+      pagesFetched++;
+
+      totalMatchingRecords =
+        data.pagination?.count ?? totalMatchingRecords;
+
+      totalPages = Number(
+        data.pagination?.pages || 1
+      );
+
+      if (page >= totalPages || results.length === 0) {
+        break;
+      }
     }
 
-    const data = await response.json();
+    // Validate the requested district and election cycle.
+    const filtered = records.filter(c => {
+      const years = Array.isArray(c.election_years)
+        ? c.election_years.map(Number)
+        : [];
 
-    const records = Array.isArray(data.results)
-      ? data.results
-      : [];
-
-    const candidates = records
-      .filter(c =>
+      return (
         c.office === 'H' &&
         String(c.state || '').toUpperCase() === state &&
-        Number(c.district) === district
-      )
+        Number(c.district) === district &&
+        years.includes(year)
+      );
+    });
+
+    // Deduplicate using the official FEC candidate ID.
+    const unique = new Map();
+
+    for (const candidate of filtered) {
+      if (!candidate.candidate_id) continue;
+
+      if (!unique.has(candidate.candidate_id)) {
+        unique.set(candidate.candidate_id, candidate);
+      }
+    }
+
+    const candidates = [...unique.values()]
       .map(c => ({
-        candidateId: c.candidate_id || null,
+        candidateId: c.candidate_id,
         name: c.name || 'Name unavailable',
         party: c.party_full || c.party || 'Not listed',
         state,
         district,
         electionYears: c.election_years || [],
         candidateStatus: c.candidate_status || null,
-        fecUrl: c.candidate_id
-          ? `https://www.fec.gov/data/candidate/${encodeURIComponent(c.candidate_id)}/`
-          : null
-      }));
+        fecUrl:
+          `https://www.fec.gov/data/candidate/${encodeURIComponent(c.candidate_id)}/`
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
 
     return json({
       demo: false,
@@ -122,11 +166,16 @@ export default async (request) => {
       electionYear: year,
       candidates,
       returnedCount: candidates.length,
-      totalMatchingRecords: data.pagination?.count ?? null,
-      page: 1,
+      totalMatchingRecords,
+      pagesFetched,
+      totalPages,
+      complete: pagesFetched >= totalPages,
       retrievedAt: new Date().toISOString(),
       source: 'Federal Election Commission',
-      note: 'FEC records are not proof of active campaigning or ballot qualification. Results may be incomplete or include historical records. For informational purposes only; no endorsements or voting recommendations.'
+      note:
+        'FEC records do not establish active campaigning or ballot qualification. ' +
+        'Results may include historical registrations. ' +
+        'For informational purposes only; no endorsements or voting recommendations.'
     });
 
   } catch (error) {
