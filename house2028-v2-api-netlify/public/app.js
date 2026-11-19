@@ -346,6 +346,7 @@ $('lookup').addEventListener('click', async () => {
         `/.netlify/functions/representative?${query}`;
 
      
+
 const candidateQuery = new URLSearchParams({
   state,
   district,
@@ -354,6 +355,7 @@ const candidateQuery = new URLSearchParams({
 
 const candidateURL =
   `/.netlify/functions/candidates?${candidateQuery}`;
+
 
       const candidateURL =
         `/.netlify/functions/candidates?${candidateQuery}`;
