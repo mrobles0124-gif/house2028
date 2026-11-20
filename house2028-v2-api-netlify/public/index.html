@@ -2,7 +2,48 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#10233b"><meta name="description" content="Independent educational congressional member lookup and 2028 election-information project."><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icons/icon-192.png"><title>House 2028 | API Edition</title><link rel="stylesheet" href="/styles.css"></head>
 <body><header class="top"><div class="shell nav"><a class="brand" href="/" aria-label="House 2028 home"><span class="mark">H<span>28</span></span><span>HOUSE <b>2028</b><small>THE CIVIC DATA LAB</small></span></a><span class="tag">INDEPENDENT PROJECT · V2</span></div></header>
 <main class="shell"><section class="hero"><div class="eyebrow">CIVIC INFORMATION, SIMPLIFIED</div><h1>Explore your <em>representation.</em></h1><p>Look up current U.S. House members by state and district, see official sources, and learn how live government data powers a modern web app.</p><div class="notice" role="note"><b>Informational disclaimer</b><span>For informational purposes only. Not election advice, voting recommendations, or an endorsement of any candidate or party. Data may be incomplete or outdated. Verify details with official election authorities. Not affiliated with any government agency, political party, or campaign.</span></div></section>
-<section class="workspace"><div class="panel controls"><div class="panel-title"><div><span class="eyebrow">01 / EXPLORE</span><h2>Find a representative</h2></div><span class="pill">NO SIGN-IN</span></div><label for="state">State or territory</label><select id="state"></select><label for="district">Congressional district</label><input id="district" inputmode="numeric" type="number" min="0" max="99" value="12" placeholder="0 for at-large">
+<section class="workspace"><div class="panel controls"><div class="panel-title"><div><span class="eyebrow">01 / EXPLORE</span><h2>Find a representative</h2></div><span class="pill">NO SIGN-IN</span></div><div class="zip-lookup">
+  <label for="zipCode">Find by ZIP code</label>
+
+  <input
+    id="zipCode"
+    type="text"
+    inputmode="numeric"
+    autocomplete="postal-code"
+    maxlength="10"
+    placeholder="90620 or 90620-1234"
+    pattern="[0-9]{5}(-?[0-9]{4})?"
+    aria-describedby="zipHint"
+  >
+
+  <p id="zipHint" class="hint">
+    Enter a 5-digit ZIP code or ZIP+4.
+    ZIP+4 precision is not yet supported by our
+    current district-mapping source.
+  </p>
+
+  <button
+    id="zipLookup"
+    class="primary"
+    type="button"
+  >
+    Find districts by ZIP
+  </button>
+
+  <div
+    id="zipResults"
+    class="zip-results"
+    role="status"
+    aria-live="polite"
+  ></div>
+</div>
+
+<div class="mode-label" style="margin-top:24px">
+  OR SEARCH MANUALLY
+</div>
+
+<label for="state">State or territory</label>
+<select id="state"></select><label for="district">Congressional district</label><input id="district" inputmode="numeric" type="number" min="0" max="99" value="12" placeholder="0 for at-large">
 <div class="year-control">
   <label for="electionYear">Election year</label>
   <select id="electionYear">
