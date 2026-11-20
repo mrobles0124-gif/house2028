@@ -686,9 +686,14 @@ $('addressLookup').addEventListener('click', async () => {
 
     output.append(confirmation);
 
-    $('status').textContent =
-      `${STATES[state]} District ${district} selected. ` +
-      'Press Look up member to retrieve government records.';
+    
+$('status').textContent =
+  `${STATES[state]} District ${district} identified. ` +
+  'Loading representative and candidate records…';
+
+// Automatically run the existing member lookup.
+$('lookup').click();
+
 
   } catch (error) {
     output.textContent =
