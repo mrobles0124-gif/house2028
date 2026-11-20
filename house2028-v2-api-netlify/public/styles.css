@@ -83,3 +83,28 @@
 .zip-results:empty {
   display: none;
 }
+
+.zip-district-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: #f4f8fd;
+  color: #145a9a;
+  border: 1px solid #dbe6f2;
+  border-radius: 9px;
+  padding: 13px;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.zip-district-option:hover,
+.zip-district-option:focus-visible {
+  background: #e7f1fc;
+  border-color: #2c80c8;
+}
+
+.zip-results .hint {
+  margin: 8px 0 12px;
+}
