@@ -484,7 +484,7 @@ $('zipLookup').addEventListener('click', async () => {
 
   try {
     const data = await requestAPI(
-      `/.netlify/functions/zip-lookup?zip=${encodeURIComponent(zip)}`
+      `/.netlify/functions/district?zip=${encodeURIComponent(zip)}`
     );
 
     const districts = Array.isArray(data.districts)
