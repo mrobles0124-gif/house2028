@@ -182,6 +182,7 @@ function describeCandidateStatus(code) {
 }
 
 
+
 function renderCandidates(data, root) {
   const year = data.electionYear || 'Selected';
 
@@ -213,6 +214,9 @@ function renderCandidates(data, root) {
     ? new Date(data.retrievedAt).toLocaleString()
     : 'Not available';
 
+  // Container for responsive candidate cards
+  const grid = element('div', 'candidate-grid');
+
   for (const candidate of candidates) {
     const card = element('article', 'profile');
 
@@ -229,16 +233,16 @@ function renderCandidates(data, root) {
 
     const details = element('div', 'candidate-details');
 
+    const statusCode = candidate.candidateStatus || '';
+
     details.append(
       element('p', 'micro', `Election cycle: ${year}`),
-      
-element(
-  'p',
-  'micro',
-  `FEC status: ${describeCandidateStatus(candidate.candidateStatus)} ` +
-  `(Code: ${candidate.candidateStatus || 'Not listed'})`
-),
-
+      element(
+        'p',
+        'micro',
+        `FEC status: ${describeCandidateStatus(statusCode)} ` +
+        `(Code: ${statusCode || 'Not listed'})`
+      ),
       element(
         'p',
         'micro',
@@ -262,8 +266,11 @@ element(
       'View official FEC record ↗'
     );
 
-    root.append(card);
+    grid.append(card);
   }
+
+  // Insert all candidate cards together
+  root.append(grid);
 
   if (data.complete === false) {
     root.append(element(
@@ -274,6 +281,7 @@ element(
     ));
   }
 }
+
 
 
 function renderDisclaimer(root) {
