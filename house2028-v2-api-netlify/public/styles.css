@@ -21,3 +21,41 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* House 2028 — Responsive FEC candidate grid */
+
+.candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+  align-items: stretch;
+}
+
+.candidate-grid > .profile {
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.candidate-grid .profile h3 {
+  font-size: clamp(18px, 2vw, 23px);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.candidate-grid .candidate-details {
+  grid-template-columns: 1fr;
+}
+
+.candidate-grid .profile a {
+  margin-top: auto;
+  padding-top: 18px;
+}
+
+@media (max-width: 1050px) {
+  .candidate-grid {
+    grid-template-columns: 1fr;
+  }
+}
