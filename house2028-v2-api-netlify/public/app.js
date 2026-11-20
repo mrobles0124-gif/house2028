@@ -459,6 +459,127 @@ const candidateURL =
   }
 });
 
+// ZIP-code congressional district lookup
+// Uses the existing HUD-powered Netlify function.
+
+$('zipLookup').addEventListener('click', async () => {
+  const input = $('zipCode').value.trim();
+  const output = $('zipResults');
+  const button = $('zipLookup');
+
+  output.replaceChildren();
+
+  // Accept ZIP5, ZIP+4, or nine digits without a hyphen.
+  if (!/^\d{5}(?:-?\d{4})?$/.test(input)) {
+    output.textContent =
+      'Enter a valid ZIP code, such as 90620 or 90620-1234.';
+    return;
+  }
+
+  // HUD mapping currently supports ZIP5, not ZIP+4.
+  const zip = input.slice(0, 5);
+
+  button.disabled = true;
+  button.textContent = 'Finding districts…';
+
+  try {
+    const data = await requestAPI(
+      `/.netlify/functions/zip-lookup?zip=${encodeURIComponent(zip)}`
+    );
+
+    const districts = Array.isArray(data.districts)
+      ? data.districts
+      : [];
+
+    if (input.length > 5) {
+      output.append(element(
+        'p',
+        'hint',
+        'ZIP+4 precision is not available yet. ' +
+        'Results use the first five digits only.'
+      ));
+    }
+
+    if (!districts.length) {
+      output.append(element(
+        'p',
+        'hint',
+        'No district mapping was returned for this ZIP code.'
+      ));
+      return;
+    }
+
+    output.append(element(
+      'p',
+      'micro',
+      `${districts.length} possible congressional district(s) found.`
+    ));
+
+    for (const match of districts) {
+      const state = match.state;
+      const district = Number(match.district);
+
+      if (
+        !STATES[state] ||
+        !Number.isInteger(district) ||
+        district < 0 ||
+        district > 99
+      ) continue;
+
+      const option = element(
+        'button',
+        'zip-district-option',
+        `${STATES[state]} — District ${district}`
+      );
+
+      option.type = 'button';
+
+      option.addEventListener('click', () => {
+        $('state').value = state;
+        $('district').value = String(district);
+
+        $('status').textContent =
+          `District ${district} selected. ` +
+          'Press Look up member to view government records.';
+
+        // Keep the selection explicit for ambiguous ZIP codes.
+        // Do not automatically assume the highest ratio is correct.
+      });
+
+      output.append(option);
+
+      if (Number.isFinite(Number(match.residentialRatio))) {
+        output.append(element(
+          'p',
+          'hint',
+          `${(Number(match.residentialRatio) * 100).toFixed(2)}% ` +
+          'of residential addresses in this ZIP code'
+        ));
+      }
+    }
+
+    if (data.ambiguous) {
+      output.append(element(
+        'p',
+        'hint',
+        'This ZIP code overlaps multiple districts. ' +
+        'Select the district that matches your address. ' +
+        'Use an official address-based lookup if unsure.'
+      ));
+    }
+
+  } catch (error) {
+    output.append(element(
+      'p',
+      'hint',
+      `ZIP lookup unavailable: ${error.message}`
+    ));
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Find districts by ZIP';
+  }
+});
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () =>
     navigator.serviceWorker.register('/sw.js')
