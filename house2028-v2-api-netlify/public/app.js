@@ -534,17 +534,43 @@ $('zipLookup').addEventListener('click', async () => {
 
       option.type = 'button';
 
-      option.addEventListener('click', () => {
-        $('state').value = state;
-        $('district').value = String(district);
+     
+option.addEventListener('click', () => {
+  // Update the manual search fields.
+  $('state').value = state;
+  $('district').value = String(district);
 
-        $('status').textContent =
-          `District ${district} selected. ` +
-          'Press Look up member to view government records.';
+  // Remove the highlight from other district buttons.
+  output.querySelectorAll('.zip-district-option')
+    .forEach(button => {
+      button.classList.remove('zip-district-selected');
+      button.setAttribute('aria-pressed', 'false');
+    });
 
-        // Keep the selection explicit for ambiguous ZIP codes.
-        // Do not automatically assume the highest ratio is correct.
-      });
+  // Highlight the selected district.
+  option.classList.add('zip-district-selected');
+  option.setAttribute('aria-pressed', 'true');
+
+  // Show a confirmation below the district options.
+  let confirmation = output.querySelector(
+    '.zip-selection-confirmation'
+  );
+
+  if (!confirmation) {
+    confirmation = element(
+      'p',
+      'zip-selection-confirmation'
+    );
+    output.append(confirmation);
+  }
+
+  confirmation.textContent =
+    `✓ Selected: ${STATES[state]} — District ${district}`;
+
+  $('status').textContent =
+    `District ${district} selected. ` +
+    'Press Look up member to view government records.';
+});
 
       output.append(option);
 
