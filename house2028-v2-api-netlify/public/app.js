@@ -169,53 +169,77 @@ function renderMembers(data, root) {
 }
 
 
+
 function renderCandidates(data, root) {
-  const heading = element(
-    'h3',
-    '',
-    `${data.electionYear} FEC Candidate Records`
+  const year = data.electionYear || 'Selected';
+
+  root.append(
+    element('h3', '', `${year} FEC Candidate Records`)
   );
 
-  root.append(heading);
+  const candidates = Array.isArray(data.candidates)
+    ? data.candidates
+    : [];
 
-  const candidates = data.candidates || [];
-
-  
-if (!candidates.length) {
-  root.append(element(
-    'p',
-    'micro',
-    `No matching ${data.electionYear} FEC candidate records were returned. ` +
-    'This does not mean nobody is running.'
-  ));
-  return;
-}
-
+  if (!candidates.length) {
+    root.append(element(
+      'p',
+      'micro',
+      `No matching ${year} FEC candidate records were returned. ` +
+      'This does not mean nobody is running.'
+    ));
+    return;
+  }
 
   root.append(element(
     'p',
     'micro',
-    `${candidates.length} record(s) returned from the FEC.`
+    `${candidates.length} candidate record(s) returned from the FEC.`
   ));
+
+  const retrieved = data.retrievedAt
+    ? new Date(data.retrievedAt).toLocaleString()
+    : 'Not available';
 
   for (const candidate of candidates) {
     const card = element('article', 'profile');
 
     card.append(
       element('div', 'eyebrow', 'FEC CANDIDATE RECORD'),
-      element('h3', '', candidate.name),
+      element('h3', '', candidate.name || 'Name unavailable'),
       element(
         'div',
         'meta',
-        `${candidate.party} · ${candidate.state} · ` +
-        `District ${candidate.district}`
+        `${candidate.party || 'Party not listed'} · ` +
+        `${candidate.state} · District ${candidate.district}`
+      )
+    );
+
+    const details = element('div', 'candidate-details');
+
+    details.append(
+      element('p', 'micro', `Election cycle: ${year}`),
+      element(
+        'p',
+        'micro',
+        `FEC status code: ${candidate.candidateStatus || 'Not listed'}`
       ),
       element(
         'p',
         'micro',
         `FEC Candidate ID: ${candidate.candidateId || 'Unavailable'}`
-      )
+      ),
+      element('p', 'micro', `Data retrieved: ${retrieved}`)
     );
+
+    card.append(details);
+
+    card.append(element(
+      'p',
+      'micro',
+      'An FEC record does not confirm active campaigning ' +
+      'or ballot qualification. Verify with official sources.'
+    ));
 
     addOfficialLink(
       card,
@@ -226,18 +250,16 @@ if (!candidates.length) {
     root.append(card);
   }
 
-  if (
-    data.totalMatchingRecords !== null &&
-    data.totalMatchingRecords > candidates.length
-  ) {
+  if (data.complete === false) {
     root.append(element(
       'p',
       'micro',
       'Additional FEC records may exist. ' +
-      'This version displays only the first page.'
+      'The available results may be incomplete.'
     ));
   }
 }
+
 
 function renderDisclaimer(root) {
   const disclaimer = element(
