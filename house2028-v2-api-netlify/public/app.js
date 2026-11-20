@@ -606,6 +606,95 @@ option.addEventListener('click', () => {
   }
 });
 
+/* Street-address congressional district lookup */
+
+$('addressLookup').addEventListener('click', async () => {
+  const address = $('streetAddress').value.trim();
+  const output = $('addressResults');
+  const button = $('addressLookup');
+
+  output.replaceChildren();
+
+  if (address.length < 10) {
+    output.textContent =
+      'Please enter a complete street address, city, state, and ZIP code.';
+    return;
+  }
+
+  if (mode === 'demo') {
+    output.textContent =
+      'Address lookup requires Live API mode.';
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = 'Finding district…';
+
+  try {
+    const query = new URLSearchParams({ address });
+
+    const data = await requestAPI(
+      `/.netlify/functions/address?${query}`
+    );
+
+    const districts = Array.isArray(data.districts)
+      ? data.districts
+      : [];
+
+    if (data.success !== true ||
+        data.status !== 'matched' ||
+        districts.length !== 1) {
+      output.textContent =
+        'A unique district could not be determined. ' +
+        'Please verify the address or use manual lookup.';
+      return;
+    }
+
+    const match = districts[0];
+    const state = String(match.state || '').toUpperCase();
+    const district = Number(match.district);
+
+    if (
+      !STATES[state] ||
+      !Number.isInteger(district) ||
+      district < 0 ||
+      district > 99
+    ) {
+      throw new Error('Invalid district data returned.');
+    }
+
+    // Populate existing manual search fields.
+    $('state').value = state;
+    $('district').value = String(district);
+
+    const confirmation = element(
+      'div',
+      'address-selection-confirmation'
+    );
+
+    confirmation.append(
+      element('strong', '',
+        `✓ ${STATES[state]} — District ${district}`),
+      element('p', 'hint',
+        'District identified using Census address geocoding. ' +
+        'Results may be approximate. Verify with official sources.')
+    );
+
+    output.append(confirmation);
+
+    $('status').textContent =
+      `${STATES[state]} District ${district} selected. ` +
+      'Press Look up member to retrieve government records.';
+
+  } catch (error) {
+    output.textContent =
+      `Address lookup unavailable: ${error.message}`;
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Find district by address';
+  }
+});
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () =>
     navigator.serviceWorker.register('/sw.js')
