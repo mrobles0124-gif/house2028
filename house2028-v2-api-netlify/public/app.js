@@ -615,7 +615,11 @@ $('addressLookup').addEventListener('click', async () => {
 
   output.replaceChildren();
 
-  if (address.length < 10) {
+ if (
+  address.length < 10 ||
+  address.length > 250 ||
+  !/^\d/.test(address)
+) {
     output.textContent =
       'Please enter a complete street address, city, state, and ZIP code.';
     return;
