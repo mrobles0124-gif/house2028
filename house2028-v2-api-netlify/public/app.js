@@ -231,11 +231,14 @@ function renderCandidates(data, root) {
 
     details.append(
       element('p', 'micro', `Election cycle: ${year}`),
-      element(
-        'p',
-        'micro',
-        `FEC status code: ${candidate.candidateStatus || 'Not listed'}`
-      ),
+      
+element(
+  'p',
+  'micro',
+  `FEC status: ${describeCandidateStatus(candidate.candidateStatus)} ` +
+  `(Code: ${candidate.candidateStatus || 'Not listed'})`
+),
+
       element(
         'p',
         'micro',
