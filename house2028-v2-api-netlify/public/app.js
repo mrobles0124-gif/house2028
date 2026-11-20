@@ -169,6 +169,18 @@ function renderMembers(data, root) {
 }
 
 
+function describeCandidateStatus(code) {
+  const statuses = {
+    C: 'Statutory candidate',
+    N: 'Not yet a statutory candidate',
+    P: 'Prior statutory candidate',
+    F: 'Future statutory candidate'
+  };
+
+  return statuses[String(code || '').toUpperCase()]
+    || 'Status not specified';
+}
+
 
 function renderCandidates(data, root) {
   const year = data.electionYear || 'Selected';
