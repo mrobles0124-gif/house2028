@@ -567,9 +567,14 @@ option.addEventListener('click', () => {
   confirmation.textContent =
     `✓ Selected: ${STATES[state]} — District ${district}`;
 
-  $('status').textContent =
-    `District ${district} selected. ` +
-    'Press Look up member to view government records.';
+  
+$('status').textContent =
+  `District ${district} selected. ` +
+  'Loading representative and candidate records…';
+
+// Automatically retrieve the representative and FEC records.
+$('lookup').click();
+
 });
 
       output.append(option);
