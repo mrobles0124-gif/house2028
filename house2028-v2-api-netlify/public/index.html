@@ -2,7 +2,38 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#10233b"><meta name="description" content="Independent educational congressional member lookup and 2028 election-information project."><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icons/icon-192.png"><title>House 2028 | API Edition</title><link rel="stylesheet" href="/styles.css"></head>
 <body><header class="top"><div class="shell nav"><a class="brand" href="/" aria-label="House 2028 home"><span class="mark">H<span>28</span></span><span>HOUSE <b>2028</b><small>THE CIVIC DATA LAB</small></span></a><span class="tag">INDEPENDENT PROJECT · V2</span></div></header>
 <main class="shell"><section class="hero"><div class="eyebrow">CIVIC INFORMATION, SIMPLIFIED</div><h1>Explore your <em>representation.</em></h1><p>Look up current U.S. House members by state and district, see official sources, and learn how live government data powers a modern web app.</p><div class="notice" role="note"><b>Informational disclaimer</b><span>For informational purposes only. Not election advice, voting recommendations, or an endorsement of any candidate or party. Data may be incomplete or outdated. Verify details with official election authorities. Not affiliated with any government agency, political party, or campaign.</span></div></section>
-<section class="workspace"><div class="panel controls"><div class="panel-title"><div><span class="eyebrow">01 / EXPLORE</span><h2>Find a representative</h2></div><span class="pill">NO SIGN-IN</span></div><div class="zip-lookup">
+<section class="workspace"><div class="panel controls"><div class="panel-title"><div><span class="eyebrow">01 / EXPLORE</span><h2>Find a representative</h2></div><span class="pill">NO SIGN-IN</span></div>
+<div class="address-lookup">
+  <label for="streetAddress">Find by street address</label>
+
+  <input
+    id="streetAddress"
+    type="text"
+    autocomplete="street-address"
+    placeholder="123 Main St, City, State ZIP"
+    aria-describedby="addressHint"
+  >
+
+  <p id="addressHint" class="hint">
+    Enter a complete U.S. street address for a more
+    precise congressional district lookup.
+    Census geocoding may be approximate.
+  </p>
+
+  <button id="addressLookup" class="primary" type="button">
+    Find district by address
+  </button>
+
+  <div id="addressResults"
+       class="address-results"
+       role="status"
+       aria-live="polite"></div>
+</div>
+
+<div class="mode-label" style="margin-top:24px">
+  OR FIND BY ZIP CODE
+</div>
+<div class="zip-lookup">
   <label for="zipCode">Find by ZIP code</label>
 
   <input
