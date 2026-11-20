@@ -108,3 +108,25 @@
 .zip-results .hint {
   margin: 8px 0 12px;
 }
+
+/* Highlight the selected ZIP-code district */
+.zip-district-selected {
+  background: #e7f2ff !important;
+  border: 2px solid #1765ad !important;
+  color: #104a80 !important;
+  box-shadow: 0 0 0 2px rgba(23, 101, 173, 0.08);
+  font-weight: 800;
+}
+
+.zip-district-selected::after {
+  content: " ✓ Selected";
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.zip-selection-confirmation {
+  margin: 12px 0;
+  color: #145a9a;
+  font-size: 13px;
+  font-weight: 700;
+}
