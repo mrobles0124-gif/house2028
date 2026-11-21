@@ -40,10 +40,14 @@ export default async (request) => {
   // This first release examines a bounded set of votes.
   const congress = 119;
   const session = 2;
-  const maxVotesToCheck = 8;
+  
+const maxVotesToCheck = 2;
+
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 20000);
+  
+const timer = setTimeout(() => controller.abort(), 25000);
+
 
   const getCongressData = async (path, params = {}) => {
     const endpoint = new URL(
