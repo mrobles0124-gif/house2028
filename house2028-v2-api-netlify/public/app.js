@@ -194,6 +194,104 @@ function describeCandidateStatus(code) {
     || 'Status not specified';
 }
 
+function renderHouseVotes(data, root) {
+  root.append(
+    element('h3', '', 'Recent House Voting Records')
+  );
+
+  const votes = Array.isArray(data.votes)
+    ? data.votes
+    : [];
+
+  if (!votes.length) {
+    root.append(element(
+      'p',
+      'micro',
+      'No matching votes were found in this limited sample. ' +
+      'This does not mean the representative did not vote.'
+    ));
+    return;
+  }
+
+  const grid = element('div', 'candidate-grid');
+
+  for (const vote of votes) {
+    const card = element('article', 'profile');
+
+    const position = String(
+      vote.position || 'Not specified'
+    );
+
+    card.append(
+      element(
+        'div',
+        'eyebrow',
+        `HOUSE ROLL CALL ${vote.rollCallNumber}`
+      ),
+      element('h3', '', `Recorded vote: ${position}`)
+    );
+
+    if (vote.date) {
+      const date = new Date(vote.date);
+
+      if (!Number.isNaN(date.getTime())) {
+        card.append(element(
+          'p',
+          'micro',
+          `Date: ${date.toLocaleDateString()}`
+        ));
+      }
+    }
+
+    card.append(
+      element(
+        'p',
+        'meta',
+        `Motion: ${vote.question || 'Not specified'}`
+      ),
+      element(
+        'p',
+        'micro',
+        `Overall result: ${vote.result || 'Not specified'}`
+      )
+    );
+
+    if (vote.legislationType && vote.legislationNumber) {
+      card.append(element(
+        'p',
+        'micro',
+        `Legislation: ${vote.legislationType} ${vote.legislationNumber}`
+      ));
+    }
+
+    addOfficialLink(
+      card,
+      vote.sourceUrl,
+      'View official roll-call record ↗'
+    );
+
+    grid.append(card);
+  }
+
+  root.append(grid);
+
+  root.append(element(
+    'p',
+    'micro',
+    `Limited sample: ${data.checked || 0} roll calls checked. ` +
+    'Not a complete voting history or a voting score. ' +
+    'A motion vote is not necessarily a final-passage vote.'
+  ));
+
+  if (data.failedChecks > 0) {
+    root.append(element(
+      'p',
+      'micro',
+      `${data.failedChecks} roll-call check(s) could not be completed.`
+    ));
+  }
+}
+
 
 function renderSenators(data, root) {
   root.append(
@@ -364,13 +462,27 @@ function showResult(
   candidateData,
   candidateError,
   senateData = null,
-  senateError = null
+  senateError = null,
+  voteData = null,
+  voteError = null
 ) {
   const root = $('result');
   root.className = '';
   root.replaceChildren();
 
   renderMembers(memberData, root);
+
+if (!memberData.demo) {
+  if (voteData) {
+    renderHouseVotes(voteData, root);
+  } else if (voteError) {
+    root.append(element(
+      'p',
+      'micro',
+      `House voting records unavailable: ${voteError}`
+    ));
+  }
+}
 
 if (senateData) {
   renderSenators(senateData, root);
@@ -396,11 +508,17 @@ if (senateData) {
 
   renderDisclaimer(root);
 
-  $('json').textContent = JSON.stringify({
-    representative: memberData,
-    fecCandidates: candidateData,
-    fecError: candidateError
-  }, null, 2);
+  
+$('json').textContent = JSON.stringify({
+  representative: memberData,
+  houseVotes: voteData,
+  houseVotesError: voteError,
+  senators: senateData,
+  senateError: senateError,
+  fecCandidates: candidateData,
+  fecError: candidateError
+}, null, 2);
+
 }
 
 
@@ -501,6 +619,27 @@ const [memberResult, candidateResult, senateResult] =
 
       const memberData = memberResult.value;
 
+// Voting records require the representative's BioGuide ID.
+const bioguideId = memberData.members?.[0]?.bioguideId;
+
+let voteData = null;
+let voteError = null;
+
+if (bioguideId) {
+  try {
+    voteData = await requestAPI(
+      `/.netlify/functions/house-votes?bioguideId=${encodeURIComponent(bioguideId)}`
+    );
+  } catch (error) {
+    voteError = error.message;
+  }
+} else {
+  voteError = 'No current House member BioGuide ID available.';
+}
+
+// Prevent an older lookup from displaying results.
+if (lookupId !== latestLookupId) return;
+
       const candidateData =
         candidateResult.status === 'fulfilled'
           ? candidateResult.value
@@ -528,13 +667,17 @@ const senateError =
           ? 'FEC lookup unavailable.'
           : `${candidateData.candidates.length} FEC record(s) returned.`);
 
-      showResult(
+      
+showResult(
   memberData,
   candidateData,
   candidateError,
   senateData,
-  senateError
+  senateError,
+  voteData,
+  voteError
 );
+
     }
  
   } catch (error) {
