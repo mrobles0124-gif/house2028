@@ -330,9 +330,13 @@ function showResult(memberData, candidateData, candidateError) {
   }, null, 2);
 }
 
+
 $('lookup').addEventListener('click', async () => {
+  const lookupId = ++latestLookupId;
+
   const state = $('state').value;
   const district = $('district').value.trim();
+
 
   if (
     !/^(0|[1-9][0-9]?)$/.test(district) ||
@@ -343,9 +347,11 @@ $('lookup').addEventListener('click', async () => {
     return;
   }
 
+  
   const button = $('lookup');
-  button.disabled = true;
   button.textContent = 'Loading…';
+  button.setAttribute('aria-busy', 'true');
+
 
   $('status').textContent =
     mode === 'live'
@@ -363,7 +369,7 @@ $('lookup').addEventListener('click', async () => {
 
         demoData = await response.json();
       }
-
+      if (lookupId !== latestLookupId) return;
       const found = demoData.members.filter(m =>
         m.state === STATES[state] &&
         Number(m.district) === Number(district)
@@ -411,7 +417,7 @@ const candidateURL =
           requestAPI(memberURL),
           requestAPI(candidateURL)
         ]);
-
+ if (lookupId !== latestLookupId) return;
       if (memberResult.status === 'rejected') {
         throw memberResult.reason;
       }
@@ -443,8 +449,12 @@ const candidateURL =
         candidateError
       );
     }
+ 
   } catch (error) {
+    if (lookupId !== latestLookupId) return;
+
     $('sourceBadge').textContent = 'ERROR';
+
     $('status').textContent = error.message;
 
     $('result').className = 'empty';
@@ -455,10 +465,14 @@ const candidateURL =
     $('json').textContent = JSON.stringify({
       error: error.message
     }, null, 2);
+  
   } finally {
-    button.disabled = false;
-    button.textContent = '↗ Look up member';
+    if (lookupId === latestLookupId) {
+         button.removeAttribute('aria-busy');
+      button.textContent = '↗ Look up member';
+    }
   }
+
 });
 
 // ZIP-code congressional district lookup
