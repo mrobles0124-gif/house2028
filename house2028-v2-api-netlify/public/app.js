@@ -195,6 +195,52 @@ function describeCandidateStatus(code) {
 }
 
 
+function renderSenators(data, root) {
+  root.append(
+    element('h3', '', 'Your U.S. Senators')
+  );
+
+  const senators = Array.isArray(data.senators)
+    ? data.senators
+    : [];
+
+  if (!senators.length) {
+    root.append(element(
+      'p',
+      'micro',
+      'No current Senate records were returned. ' +
+      'Check official sources for vacancies or updates.'
+    ));
+    return;
+  }
+
+  const grid = element('div', 'candidate-grid');
+
+  for (const senator of senators) {
+    const card = element('article', 'profile');
+
+    card.append(
+      element('div', 'eyebrow', 'CURRENT U.S. SENATOR'),
+      element('h3', '', senator.name),
+      element(
+        'div',
+        'meta',
+        `${senator.party} · ${senator.state} · U.S. Senate`
+      )
+    );
+
+    addOfficialLink(
+      card,
+      senator.congressUrl,
+      'View official Congress.gov record ↗'
+    );
+
+    grid.append(card);
+  }
+
+  root.append(grid);
+}
+
 
 function renderCandidates(data, root) {
   const year = data.electionYear || 'Selected';
@@ -313,12 +359,28 @@ function renderDisclaimer(root) {
   root.append(disclaimer);
 }
 
-function showResult(memberData, candidateData, candidateError) {
+function showResult(
+  memberData,
+  candidateData,
+  candidateError,
+  senateData = null,
+  senateError = null
+) {
   const root = $('result');
   root.className = '';
   root.replaceChildren();
 
   renderMembers(memberData, root);
+
+if (senateData) {
+  renderSenators(senateData, root);
+} else if (senateError) {
+  root.append(element(
+    'p',
+    'micro',
+    `Senate records unavailable: ${senateError}`
+  ));
+}
 
   if (!memberData.demo) {
     if (candidateError) {
@@ -420,14 +482,18 @@ const candidateQuery = new URLSearchParams({
 const candidateURL =
   `/.netlify/functions/candidates?${candidateQuery}`;
 
-
+const senateURL =
+  `/.netlify/functions/senators?state=${encodeURIComponent(state)}`;
       // Both requests run concurrently.
       // A failure in one does not automatically cancel the other.
-      const [memberResult, candidateResult] =
-        await Promise.allSettled([
-          requestAPI(memberURL),
-          requestAPI(candidateURL)
-        ]);
+     
+const [memberResult, candidateResult, senateResult] =
+  await Promise.allSettled([
+    requestAPI(memberURL),
+    requestAPI(candidateURL),
+    requestAPI(senateURL)
+  ]);
+
  if (lookupId !== latestLookupId) return;
       if (memberResult.status === 'rejected') {
         throw memberResult.reason;
@@ -444,7 +510,15 @@ const candidateURL =
         candidateResult.status === 'rejected'
           ? candidateResult.reason.message
           : null;
+const senateData =
+  senateResult.status === 'fulfilled'
+    ? senateResult.value
+    : null;
 
+const senateError =
+  senateResult.status === 'rejected'
+    ? senateResult.reason.message
+    : null;
       $('sourceBadge').textContent =
         candidateError ? 'PARTIAL DATA' : 'GOVERNMENT DATA';
 
@@ -455,10 +529,12 @@ const candidateURL =
           : `${candidateData.candidates.length} FEC record(s) returned.`);
 
       showResult(
-        memberData,
-        candidateData,
-        candidateError
-      );
+  memberData,
+  candidateData,
+  candidateError,
+  senateData,
+  senateError
+);
     }
  
   } catch (error) {
