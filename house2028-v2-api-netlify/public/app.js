@@ -37,6 +37,8 @@ $('state').value = 'CA';
 let mode = 'live';
 let demoData = null;
 
+let latestLookupId = 0;
+
 function element(tag, className, content) {
   const node = document.createElement(tag);
   if (className) node.className = className;
