@@ -56,8 +56,19 @@ function addOfficialLink(card, url, label) {
   card.append(link);
 }
 
+
 function setMode(next) {
+  // Invalidate any lookup still running.
+  latestLookupId++;
+
+  // Reset the lookup button if a request was in progress.
+  const lookupButton = $('lookup');
+  lookupButton.disabled = false;
+  lookupButton.removeAttribute('aria-busy');
+  lookupButton.textContent = '↗ Look up member';
+
   mode = next;
+
 
   for (const m of ['live','demo']) {
     $(m).classList.toggle('active', m === mode);
