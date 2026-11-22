@@ -60,6 +60,12 @@ function addOfficialLink(card, url, label) {
 
 let activeProfile = null;
 
+// Store successful voting requests for this browser session.
+const houseVoteCache = new Map();
+
+// Track which profile and tab should receive results.
+let profileRequestId = 0;
+
 function openProfile(person, office, votes = null, demo = false) {
   activeProfile = { person, office, votes, demo };
 
@@ -73,13 +79,95 @@ function openProfile(person, office, votes = null, demo = false) {
       ? `U.S. House — District ${person.district}`
       : 'U.S. Senate');
 
-  selectProfileTab('votes');
-
+  // Open immediately, before making voting API requests.
   $('profileDialog').showModal();
-}
 
+  selectProfileTab('votes');
+}
+async function loadProfileVotes(profile, content, requestId) {
+  const bioguideId = profile.person.bioguideId;
+
+  if (!bioguideId) {
+    content.textContent =
+      'No BioGuide ID is available for this representative.';
+    return;
+  }
+
+  content.replaceChildren(
+    element('h3', '', 'Voting History'),
+    element('p', 'micro', 'Loading official House voting records…')
+  );
+
+  try {
+    // Reuse a completed or in-progress request.
+    let voteRequest = houseVoteCache.get(bioguideId);
+
+    if (!voteRequest) {
+      voteRequest = requestAPI(
+        `/.netlify/functions/house-votes?bioguideId=${encodeURIComponent(bioguideId)}`
+      );
+
+      houseVoteCache.set(bioguideId, voteRequest);
+    }
+
+    const voteData = await voteRequest;
+
+    // Do not update a closed profile or a different tab.
+    if (
+      activeProfile !== profile ||
+      requestId !== profileRequestId ||
+      !$('profileDialog').open ||
+      $('tabVotes').getAttribute('aria-selected') !== 'true'
+    ) {
+      return;
+    }
+
+    content.replaceChildren();
+
+    renderHouseVotes(voteData, content);
+
+  } catch (error) {
+    // Failed requests should be retryable.
+    houseVoteCache.delete(bioguideId);
+
+    if (
+      activeProfile !== profile ||
+      requestId !== profileRequestId ||
+      !$('profileDialog').open ||
+      $('tabVotes').getAttribute('aria-selected') !== 'true'
+    ) {
+      return;
+    }
+
+    content.replaceChildren(
+      element('h3', '', 'Voting History'),
+      element(
+        'p',
+        'micro',
+        `Unable to load voting records: ${error.message}`
+      )
+    );
+
+    const retryButton = element(
+      'button',
+      'view-profile',
+      'Try loading voting records again'
+    );
+
+    retryButton.type = 'button';
+
+    retryButton.addEventListener('click', () => {
+      selectProfileTab('votes');
+    });
+
+    content.append(retryButton);
+  }
+}
 function selectProfileTab(tab) {
   if (!activeProfile) return;
+
+  // Invalidate any earlier tab-rendering request.
+  const requestId = ++profileRequestId;
 
   const tabs = {
     votes: $('tabVotes'),
@@ -98,33 +186,33 @@ function selectProfileTab(tab) {
   content.replaceChildren();
   content.setAttribute('aria-labelledby', tabs[tab].id);
 
-  if (tab === 'votes') {
-    if (activeProfile.demo) {
-      content.append(element(
-        'p', 'micro',
-        'Fictional demonstration profile. ' +
-        'No real voting records are associated with this person.'
-      ));
-    } else if (
-      activeProfile.office === 'house' &&
-      activeProfile.votes
-    ) {
-      renderHouseVotes(activeProfile.votes, content);
-    } else if (activeProfile.office === 'senate') {
-      content.append(
-        element('h3', '', 'Senate Voting History'),
-        element('p', 'micro',
-          'Senate voting records are not connected yet. ' +
-          'This does not indicate an absence of recorded votes.')
-      );
-    } else {
-      content.append(element(
-        'p', 'micro',
-        'House voting records are currently unavailable. ' +
+if (tab === 'votes') {
+  const profile = activeProfile;
+
+  if (profile.demo) {
+    content.append(element(
+      'p',
+      'micro',
+      'Fictional demonstration profile. ' +
+      'No real voting records are associated with this person.'
+    ));
+
+  } else if (profile.office === 'house') {
+    // Fetch House votes only when the profile is opened.
+    loadProfileVotes(profile, content, requestId);
+
+  } else if (profile.office === 'senate') {
+    content.append(
+      element('h3', '', 'Senate Voting History'),
+      element(
+        'p',
+        'micro',
+        'Senate voting records are not connected yet. ' +
         'This does not indicate an absence of recorded votes.'
-      ));
-    }
+      )
+    );
   }
+}
 
   if (tab === 'funding') {
     content.append(
@@ -203,6 +291,7 @@ profileTabButtons.forEach((button, index) => {
 
 // Clear profile state after closing
 $('profileDialog').addEventListener('close', () => {
+  profileRequestId++;
   activeProfile = null;
 });
 function setMode(next) {
@@ -780,27 +869,6 @@ const [memberResult, candidateResult, senateResult] =
 
       const memberData = memberResult.value;
 
-// Voting records require the representative's BioGuide ID.
-const bioguideId = memberData.members?.[0]?.bioguideId;
-
-let voteData = null;
-let voteError = null;
-
-if (bioguideId) {
-  try {
-    voteData = await requestAPI(
-      `/.netlify/functions/house-votes?bioguideId=${encodeURIComponent(bioguideId)}`
-    );
-  } catch (error) {
-    voteError = error.message;
-  }
-} else {
-  voteError = 'No current House member BioGuide ID available.';
-}
-
-// Prevent an older lookup from displaying results.
-if (lookupId !== latestLookupId) return;
-
       const candidateData =
         candidateResult.status === 'fulfilled'
           ? candidateResult.value
@@ -834,9 +902,7 @@ showResult(
   candidateData,
   candidateError,
   senateData,
-  senateError,
-  voteData,
-  voteError
+  senateError
 );
 
     }
