@@ -85,4 +85,58 @@
 <p class="hint">Enter 0 for at-large districts. ZIP codes can span multiple districts.</p><button id="lookup" class="primary">↗ Look up member</button><div class="mode"><span class="mode-label">DATA MODE</span><div class="switches"><button id="live" class="active" aria-pressed="true">Live API</button><button id="demo" aria-pressed="false">Demo data</button></div></div><div id="status" class="status" role="status" aria-live="polite">Choose a state and district to begin.</div></div>
 <div class="panel results"><div class="panel-title"><div><span class="eyebrow">02 / RESULTS</span><h2>Member profile — Live Data</h2></div><span id="sourceBadge" class="pill muted">WAITING</span></div><div id="result" class="empty"><div class="empty-icon">⌕</div><h3>Start with a district</h3><p>Choose a location and press “Look up member” to retrieve a profile.</p></div><div class="api-inspector"><div class="inspector-head"><span>API RESPONSE INSPECTOR</span><button id="toggleJson" aria-expanded="false">Show JSON ▾</button></div><pre id="json" hidden>{}</pre></div></div></section>
 <section class="learn"><div><span class="eyebrow">BEHIND THE SCENES</span><h2>How this works</h2></div><div class="steps"><div><span>01</span><b>Browser request</b><p>JavaScript fetch() calls your Netlify endpoint.</p></div><div><span>02</span><b>Serverless function</b><p>The backend safely attaches the private API key.</p></div><div><span>03</span><b>Official data</b><p>Congress.gov returns JSON, which the app renders.</p></div></div></section><section class="notice secondary"><b>About 2028 challengers</b><span>This version identifies current House members only. It does not predict challengers or verify 2028 candidacies. A future FEC and state-election-data integration can add sourced candidate records.</span></section></main>
-<footer class="shell footer">Independent educational portfolio project · <a href="https://www.congress.gov/" target="_blank" rel="noopener noreferrer">Congress.gov</a> · <a href="https://www.fec.gov/" target="_blank" rel="noopener noreferrer">FEC.gov</a><br>Informational use only · No endorsements or election advice · No affiliation with any government agency.</footer><script src="/app.js" defer></script></body></html>
+<footer class="shell footer">Independent educational portfolio project · <a href="https://www.congress.gov/" target="_blank" rel="noopener noreferrer">Congress.gov</a> · <a href="https://www.fec.gov/" target="_blank" rel="noopener noreferrer">FEC.gov</a><br>Informational use only · No endorsements or election advice · No affiliation with any government agency.</footer><!-- CivicAtlas politician profile overlay -->
+<dialog id="profileDialog" class="profile-dialog"
+        aria-labelledby="profileName">
+
+  <div class="profile-dialog-inner">
+
+    <div class="profile-dialog-header">
+      <div>
+        <div class="eyebrow">CIVICATLAS · PUBLIC RECORDS</div>
+        <h2 id="profileName">Politician profile</h2>
+        <p id="profileOffice" class="meta"></p>
+      </div>
+
+      <button id="closeProfile"
+              class="profile-close"
+              type="button"
+              aria-label="Close politician profile">
+        &times;
+      </button>
+    </div>
+
+    <div class="profile-tabs" role="tablist"
+         aria-label="Profile information">
+
+      <button id="tabVotes" type="button"
+              role="tab" aria-selected="true"
+              aria-controls="profileContent">
+        Voting History
+      </button>
+
+      <button id="tabFunding" type="button"
+              role="tab" aria-selected="false"
+              aria-controls="profileContent">
+        Campaign Funding
+      </button>
+
+      <button id="tabDisclosures" type="button"
+              role="tab" aria-selected="false"
+              aria-controls="profileContent">
+        Financial Disclosures
+      </button>
+    </div>
+
+    <section id="profileContent"
+             role="tabpanel"
+             aria-labelledby="tabVotes"
+             tabindex="0">
+    </section>
+
+  </div>
+</dialog>
+
+<script src="/app.js" defer></script>
+</body>
+</html>
