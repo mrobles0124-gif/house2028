@@ -159,3 +159,132 @@
 .address-selection-confirmation p {
   margin-bottom: 0;
 }
+/* CIVICATLAS — POLITICIAN PROFILE OVERLAY */
+
+.profile-dialog {
+  width: min(940px, calc(100% - 24px));
+  max-height: min(92vh, 100dvh - 24px);
+  border: 1px solid #dce5ef;
+  border-radius: 18px;
+  padding: 0;
+  background: #fff;
+  color: #15253b;
+  box-shadow: 0 24px 80px rgba(16, 35, 59, .25);
+  overflow: auto;
+}
+
+.profile-dialog::backdrop {
+  background: rgba(10, 26, 45, .72);
+}
+
+.profile-dialog-inner {
+  padding: 30px;
+}
+
+.profile-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.profile-dialog-header h2 {
+  font-size: clamp(25px, 4vw, 36px);
+  margin: 12px 0 8px;
+}
+
+.profile-dialog-header .meta {
+  color: #66788e;
+  font-size: 13px;
+}
+
+.profile-close {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #dce5ef;
+  border-radius: 50%;
+  background: #f4f7fb;
+  color: #10233b;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.profile-close:hover {
+  background: #e7f1fc;
+}
+
+.profile-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 28px 0 22px;
+  border-bottom: 1px solid #e2e8f0;
+  overflow-x: auto;
+}
+
+.profile-tabs button {
+  padding: 13px 16px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #66788e;
+  font-size: 13px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.profile-tabs button[aria-selected="true"] {
+  color: #145a9a;
+  border-bottom-color: #145a9a;
+}
+
+.profile-tabs button:focus-visible,
+.profile-close:focus-visible,
+.view-profile:focus-visible {
+  outline: 3px solid #7dc4ff;
+  outline-offset: 3px;
+}
+
+#profileContent {
+  min-height: 220px;
+  line-height: 1.6;
+}
+
+#profileContent > h3 {
+  margin-top: 0;
+}
+
+#profileContent .candidate-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.view-profile {
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid #bcd7f1;
+  border-radius: 9px;
+  background: #eaf3fd;
+  color: #145a9a;
+  font-weight: 750;
+}
+
+.view-profile:hover {
+  background: #dcecff;
+}
+
+@media (max-width: 650px) {
+  .profile-dialog-inner {
+    padding: 19px;
+  }
+
+  .profile-tabs button {
+    padding: 12px 10px;
+    font-size: 11px;
+  }
+
+  #profileContent .candidate-grid {
+    grid-template-columns: 1fr;
+  }
+}
