@@ -41,7 +41,8 @@ export default async (request) => {
   const congress = 119;
   const session = 2;
   
-const maxVotesToCheck = 2;
+const maxVotesToCheck = 8;
+const maxConcurrentChecks = 3;
 
 
   const controller = new AbortController();
@@ -97,71 +98,21 @@ const timer = setTimeout(() => controller.abort(), 25000);
     const votes = [];
     let failedChecks = 0;
 
-    // Sequential requests keep API usage controlled.
-    for (const vote of selectedVotes) {
-      const rollCallNumber = Number(vote.rollCallNumber);
+   const votes = [];
+let failedChecks = 0;
 
-      if (!Number.isInteger(rollCallNumber) ||
-          rollCallNumber < 1) {
-        continue;
-      }
+// PASTE THE NEW checkVote FUNCTION HERE
 
-      try {
-        const details = await getCongressData(
-          `house-vote/${congress}/${session}/${rollCallNumber}/members`,
-          { limit: 500 }
-        );
+// PASTE THE NEW CONCURRENT BATCH LOOP HERE
 
-        const record =
-          details.houseRollCallVoteMemberVotes || {};
-
-        const members = Array.isArray(record.results)
-          ? record.results
-          : [];
-
-        const memberVote = members.find(member =>
-          String(member.bioguideID ||
-                 member.bioguideId || '').toUpperCase()
-            === bioguideId
-        );
-
-        // No recorded position found for this member.
-        if (!memberVote) continue;
-
-        votes.push({
-          congress,
-          session,
-          rollCallNumber,
-          date: record.startDate || vote.startDate || null,
-          position: String(
-            memberVote.voteCast || 'Not specified'
-          ),
-          question: String(
-            record.voteQuestion || 'Not specified'
-          ),
-          result: String(
-            record.result || vote.result || 'Not specified'
-          ),
-          legislationType:
-            record.legislationType ||
-            vote.legislationType ||
-            null,
-          legislationNumber:
-            record.legislationNumber ||
-            vote.legislationNumber ||
-            null,
-          sourceUrl:
-            record.sourceDataURL ||
-            vote.sourceDataURL ||
-            `https://clerk.house.gov/Votes/${rollCallNumber}2026`
-        });
-
-      } catch (error) {
-        if (controller.signal.aborted) throw error;
-        failedChecks++;
-      }
-    }
-
+return json({
+  success: true,
+  bioguideId,
+  congress,
+  session,
+  votes,
+  // ... rest of your existing response
+});
     return json({
       success: true,
       bioguideId,
