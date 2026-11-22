@@ -56,7 +56,155 @@ function addOfficialLink(card, url, label) {
   card.append(link);
 }
 
+// CIVICATLAS — POLITICIAN PROFILE OVERLAY
 
+let activeProfile = null;
+
+function openProfile(person, office, votes = null, demo = false) {
+  activeProfile = { person, office, votes, demo };
+
+  $('profileName').textContent =
+    person.name || 'Name unavailable';
+
+  $('profileOffice').textContent =
+    `${person.party || 'Party not listed'} · ` +
+    `${person.state || 'Location unavailable'} · ` +
+    (office === 'house'
+      ? `U.S. House — District ${person.district}`
+      : 'U.S. Senate');
+
+  selectProfileTab('votes');
+
+  $('profileDialog').showModal();
+}
+
+function selectProfileTab(tab) {
+  if (!activeProfile) return;
+
+  const tabs = {
+    votes: $('tabVotes'),
+    funding: $('tabFunding'),
+    disclosures: $('tabDisclosures')
+  };
+
+  for (const [key, button] of Object.entries(tabs)) {
+    const selected = key === tab;
+
+    button.setAttribute('aria-selected', String(selected));
+    button.tabIndex = selected ? 0 : -1;
+  }
+
+  const content = $('profileContent');
+  content.replaceChildren();
+  content.setAttribute('aria-labelledby', tabs[tab].id);
+
+  if (tab === 'votes') {
+    if (activeProfile.demo) {
+      content.append(element(
+        'p', 'micro',
+        'Fictional demonstration profile. ' +
+        'No real voting records are associated with this person.'
+      ));
+    } else if (
+      activeProfile.office === 'house' &&
+      activeProfile.votes
+    ) {
+      renderHouseVotes(activeProfile.votes, content);
+    } else if (activeProfile.office === 'senate') {
+      content.append(
+        element('h3', '', 'Senate Voting History'),
+        element('p', 'micro',
+          'Senate voting records are not connected yet. ' +
+          'This does not indicate an absence of recorded votes.')
+      );
+    } else {
+      content.append(element(
+        'p', 'micro',
+        'House voting records are currently unavailable. ' +
+        'This does not indicate an absence of recorded votes.'
+      ));
+    }
+  }
+
+  if (tab === 'funding') {
+    content.append(
+      element('h3', '', 'Campaign Funding'),
+      element('p', 'micro',
+        'Campaign finance data is not connected yet. ' +
+        'Future records will identify election cycles, ' +
+        'committees, contributions, and independent expenditures.')
+    );
+  }
+
+  if (tab === 'disclosures') {
+    content.append(
+      element('h3', '', 'Financial Disclosures'),
+      element('p', 'micro',
+        'Financial disclosure records are not connected yet. ' +
+        'Future profiles will show reported assets and liabilities ' +
+        'using the ranges provided in official filings, ' +
+        'rather than claiming an exact net worth.')
+    );
+  }
+}
+
+// Close button
+$('closeProfile').addEventListener('click', () => {
+  $('profileDialog').close();
+});
+
+// Tab buttons
+$('tabVotes').addEventListener('click', () => {
+  selectProfileTab('votes');
+});
+
+$('tabFunding').addEventListener('click', () => {
+  selectProfileTab('funding');
+});
+
+$('tabDisclosures').addEventListener('click', () => {
+  selectProfileTab('disclosures');
+});
+
+// Keyboard navigation between tabs
+const profileTabButtons = [
+  $('tabVotes'),
+  $('tabFunding'),
+  $('tabDisclosures')
+];
+
+profileTabButtons.forEach((button, index) => {
+  button.addEventListener('keydown', event => {
+    let nextIndex;
+
+    if (event.key === 'ArrowRight') {
+      nextIndex = (index + 1) % profileTabButtons.length;
+    } else if (event.key === 'ArrowLeft') {
+      nextIndex =
+        (index - 1 + profileTabButtons.length) %
+        profileTabButtons.length;
+    } else if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = profileTabButtons.length - 1;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+
+    const nextTab = profileTabButtons[nextIndex];
+    nextTab.focus();
+
+    const tabNames = ['votes', 'funding', 'disclosures'];
+    selectProfileTab(tabNames[nextIndex]);
+  });
+});
+
+// Clear profile state after closing
+$('profileDialog').addEventListener('close', () => {
+  activeProfile = null;
+});
 function setMode(next) {
   // Invalidate any lookup still running.
   latestLookupId++;
@@ -123,7 +271,7 @@ async function requestAPI(endpoint) {
   return data;
 }
 
-function renderMembers(data, root) {
+function renderMembers(data, root, voteData = null) {
   const heading = element('h3', '', 'Current House member');
   root.append(heading);
 
@@ -176,7 +324,19 @@ function renderMembers(data, root) {
         'View official Congress.gov record ↗'
       );
     }
+    const profileButton = element(
+      'button',
+      'view-profile',
+      'View full profile →'
+    );
 
+    profileButton.type = 'button';
+
+    profileButton.addEventListener('click', () => {
+      openProfile(m, 'house', voteData, Boolean(data.demo));
+    });
+
+    card.append(profileButton);
     root.append(card);
   }
 }
@@ -269,7 +429,19 @@ function renderHouseVotes(data, root) {
       vote.sourceUrl,
       'View official roll-call record ↗'
     );
+    const profileButton = element(
+      'button',
+      'view-profile',
+      'View full profile →'
+    );
 
+    profileButton.type = 'button';
+
+    profileButton.addEventListener('click', () => {
+      openProfile(senator, 'senate');
+    });
+
+    card.append(profileButton);
     grid.append(card);
   }
 
@@ -470,19 +642,8 @@ function showResult(
   root.className = '';
   root.replaceChildren();
 
-  renderMembers(memberData, root);
+  renderMembers(memberData, root, voteData);
 
-if (!memberData.demo) {
-  if (voteData) {
-    renderHouseVotes(voteData, root);
-  } else if (voteError) {
-    root.append(element(
-      'p',
-      'micro',
-      `House voting records unavailable: ${voteError}`
-    ));
-  }
-}
 
 if (senateData) {
   renderSenators(senateData, root);
