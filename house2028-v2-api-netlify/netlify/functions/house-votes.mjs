@@ -98,8 +98,6 @@ const timer = setTimeout(() => controller.abort(), 25000);
     const votes = [];
     let failedChecks = 0;
 
-   const votes = [];
-let failedChecks = 0;
 
 // PASTE THE NEW checkVote FUNCTION HERE
 
