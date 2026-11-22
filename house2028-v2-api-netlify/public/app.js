@@ -588,11 +588,25 @@ function renderSenators(data, root) {
       )
     );
 
-    addOfficialLink(
+        addOfficialLink(
       card,
       senator.congressUrl,
       'View official Congress.gov record ↗'
     );
+
+    const profileButton = element(
+      'button',
+      'view-profile',
+      'View full profile →'
+    );
+
+    profileButton.type = 'button';
+
+    profileButton.addEventListener('click', () => {
+      openProfile(senator, 'senate');
+    });
+
+    card.append(profileButton);
 
     grid.append(card);
   }
