@@ -124,7 +124,7 @@ async function loadProfileVotes(profile, content, requestId) {
 
     content.replaceChildren();
 
-    renderHouseVotes(voteData, content);
+    renderHouseVotes(voteData, content, bioguideId);
 
   } catch (error) {
     // Failed requests should be retryable.
@@ -443,103 +443,212 @@ function describeCandidateStatus(code) {
     || 'Status not specified';
 }
 
-function renderHouseVotes(data, root) {
+function renderHouseVotes(data, root, bioguideId = null) {
+  root.replaceChildren();
+
   root.append(
-    element('h3', '', 'Recent House Voting Records')
+    element('h3', '', 'House Voting History')
   );
 
-  const votes = Array.isArray(data.votes)
-    ? data.votes
-    : [];
-
-  if (!votes.length) {
-    root.append(element(
-      'p',
-      'micro',
-      'No matching votes were found in this limited sample. ' +
-      'This does not mean the representative did not vote.'
-    ));
-    return;
-  }
-
-  const grid = element('div', 'candidate-grid');
-
-  for (const vote of votes) {
-    const card = element('article', 'profile');
-
-    const position = String(
-      vote.position || 'Not specified'
-    );
-
-    card.append(
-      element(
-        'div',
-        'eyebrow',
-        `HOUSE ROLL CALL ${vote.rollCallNumber}`
-      ),
-      element('h3', '', `Recorded vote: ${position}`)
-    );
-
-    if (vote.date) {
-      const date = new Date(vote.date);
-
-      if (!Number.isNaN(date.getTime())) {
-        card.append(element(
-          'p',
-          'micro',
-          `Date: ${date.toLocaleDateString()}`
-        ));
-      }
-    }
-
-    card.append(
-      element(
-        'p',
-        'meta',
-        `Motion: ${vote.question || 'Not specified'}`
-      ),
-      element(
-        'p',
-        'micro',
-        `Overall result: ${vote.result || 'Not specified'}`
-      )
-    );
-
-    if (vote.legislationType && vote.legislationNumber) {
-      card.append(element(
-        'p',
-        'micro',
-        `Legislation: ${vote.legislationType} ${vote.legislationNumber}`
-      ));
-    }
-
-    addOfficialLink(
-      card,
-      vote.sourceUrl,
-      'View official roll-call record ↗'
-    );
-    grid.append(card);
-  }
-
-  root.append(grid);
-
-  root.append(element(
+  const description = element(
     'p',
     'micro',
-    `Limited sample: ${data.checked || 0} roll calls checked. ` +
-    'Not a complete voting history or a voting score. ' +
-    'A motion vote is not necessarily a final-passage vote.'
-  ));
+    '119th Congress · 2026 session. Records are shown ' +
+    'newest-first among those loaded. Additional records ' +
+    'may appear out of sequence as more pages are retrieved.'
+  );
+  root.append(description);
 
-  if (data.failedChecks > 0) {
-    root.append(element(
+  const grid = element('div', 'candidate-grid');
+  root.append(grid);
+
+  const allVotes = [];
+  const seen = new Set();
+
+  function addVotes(newVotes) {
+    for (const vote of newVotes) {
+      const key = [
+        vote.congress,
+        vote.session,
+        vote.rollCallNumber
+      ].join('-');
+
+      if (seen.has(key)) continue;
+
+      seen.add(key);
+      allVotes.push(vote);
+    }
+
+    allVotes.sort((a, b) =>
+      new Date(b.date || 0) - new Date(a.date || 0)
+    );
+
+    grid.replaceChildren();
+
+    for (const vote of allVotes) {
+      const card = element('article', 'profile');
+
+      card.append(
+        element(
+          'div',
+          'eyebrow',
+          `HOUSE ROLL CALL ${vote.rollCallNumber}`
+        ),
+        element(
+          'h3',
+          '',
+          `Recorded vote: ${vote.position || 'Not specified'}`
+        )
+      );
+
+      if (vote.date) {
+        const date = new Date(vote.date);
+
+        if (!Number.isNaN(date.getTime())) {
+          card.append(
+            element(
+              'p',
+              'micro',
+              `Date: ${date.toLocaleDateString()}`
+            )
+          );
+        }
+      }
+
+      card.append(
+        element(
+          'p',
+          'meta',
+          `Motion: ${vote.question || 'Not specified'}`
+        ),
+        element(
+          'p',
+          'micro',
+          `Overall result: ${vote.result || 'Not specified'}`
+        )
+      );
+
+      if (vote.legislationType && vote.legislationNumber) {
+        card.append(
+          element(
+            'p',
+            'micro',
+            `Legislation: ${vote.legislationType} ${vote.legislationNumber}`
+          )
+        );
+      }
+
+      addOfficialLink(
+        card,
+        vote.sourceUrl,
+        'View official roll-call record ↗'
+      );
+
+      grid.append(card);
+    }
+
+    count.textContent =
+      `${allVotes.length} unique voting record(s) loaded. ` +
+      'This is not a complete voting history or voting score.';
+  }
+
+  const count = element('p', 'micro');
+  const errorMessage = element('p', 'micro');
+
+  root.append(count);
+
+  root.append(
+    element(
       'p',
       'micro',
-      `${data.failedChecks} roll-call check(s) could not be completed.`
-    ));
-  }
-}
+      'A procedural motion is not necessarily a final-passage vote.'
+    )
+  );
 
+  const loadMoreButton = element(
+    'button',
+    'view-profile',
+    'Load more votes ↓'
+  );
+
+  loadMoreButton.type = 'button';
+
+  let nextOffset = data.pagination?.nextOffset ?? null;
+  let hasMore = Boolean(data.pagination?.hasMore);
+
+  // Track offsets to avoid accidentally requesting a page twice.
+  const loadedOffsets = new Set([
+    data.pagination?.offset ?? 0
+  ]);
+
+  function updateButton() {
+    loadMoreButton.hidden = !hasMore || !bioguideId;
+  }
+
+  loadMoreButton.addEventListener('click', async () => {
+    if (!hasMore || nextOffset === null) return;
+    if (loadedOffsets.has(nextOffset)) return;
+
+    const requestedOffset = nextOffset;
+
+    loadMoreButton.disabled = true;
+    loadMoreButton.textContent = 'Loading more votes…';
+    errorMessage.textContent = '';
+
+    try {
+      const endpoint =
+        '/.netlify/functions/house-votes' +
+        `?bioguideId=${encodeURIComponent(bioguideId)}` +
+        `&offset=${requestedOffset}`;
+
+      const nextPage = await requestAPI(endpoint);
+
+      loadedOffsets.add(requestedOffset);
+
+      addVotes(
+        Array.isArray(nextPage.votes)
+          ? nextPage.votes
+          : []
+      );
+
+      nextOffset = nextPage.pagination?.nextOffset ?? null;
+      hasMore = Boolean(nextPage.pagination?.hasMore);
+
+      if (nextOffset !== null &&
+          nextOffset <= requestedOffset) {
+        hasMore = false;
+      }
+
+      if (nextPage.failedChecks > 0) {
+        errorMessage.textContent =
+          `${nextPage.failedChecks} roll-call checks failed ` +
+          'on this page. Some records may be missing.';
+      }
+
+    } catch (error) {
+      errorMessage.textContent =
+        `Unable to load more votes: ${error.message}`;
+    } finally {
+      loadMoreButton.disabled = false;
+      loadMoreButton.textContent = 'Load more votes ↓';
+      updateButton();
+    }
+  });
+
+  root.append(loadMoreButton, errorMessage);
+
+  addVotes(
+    Array.isArray(data.votes) ? data.votes : []
+  );
+
+  if (data.failedChecks > 0) {
+    errorMessage.textContent =
+      `${data.failedChecks} roll-call checks failed ` +
+      'on the initial page.';
+  }
+
+  updateButton();
+}
 
 function renderSenators(data, root) {
   root.append(
