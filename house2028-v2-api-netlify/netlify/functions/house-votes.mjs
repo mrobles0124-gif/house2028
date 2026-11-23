@@ -95,13 +95,104 @@ const timer = setTimeout(() => controller.abort(), 25000);
       )
       .slice(0, maxVotesToCheck);
 
-    const votes = [];
-    let failedChecks = 0;
+    
+const votes = [];
+let failedChecks = 0;
 
+// Retrieve one roll call and find the selected member.
+const checkVote = async (vote) => {
+  const rollCallNumber = Number(vote.rollCallNumber);
 
-// PASTE THE NEW checkVote FUNCTION HERE
+  if (!Number.isInteger(rollCallNumber) ||
+      rollCallNumber < 1) {
+    return { status: 'invalid' };
+  }
 
-// PASTE THE NEW CONCURRENT BATCH LOOP HERE
+  try {
+    const details = await getCongressData(
+      `house-vote/${congress}/${session}/${rollCallNumber}/members`,
+      { limit: 500 }
+    );
+
+    const record =
+      details.houseRollCallVoteMemberVotes || {};
+
+    const members = Array.isArray(record.results)
+      ? record.results
+      : [];
+
+    const memberVote = members.find(member =>
+      String(
+        member.bioguideID || member.bioguideId || ''
+      ).toUpperCase() === bioguideId
+    );
+
+    if (!memberVote) {
+      return { status: 'not-found' };
+    }
+
+    return {
+      status: 'found',
+      vote: {
+        congress,
+        session,
+        rollCallNumber,
+        date: record.startDate || vote.startDate || null,
+        position: String(
+          memberVote.voteCast || 'Not specified'
+        ),
+        question: String(
+          record.voteQuestion || 'Not specified'
+        ),
+        result: String(
+          record.result || vote.result || 'Not specified'
+        ),
+        legislationType:
+          record.legislationType ||
+          vote.legislationType ||
+          null,
+        legislationNumber:
+          record.legislationNumber ||
+          vote.legislationNumber ||
+          null,
+        sourceUrl:
+          record.sourceDataURL ||
+          vote.sourceDataURL ||
+          `https://clerk.house.gov/Votes/${rollCallNumber}2026`
+      }
+    };
+
+  } catch (error) {
+    if (controller.signal.aborted) throw error;
+
+    return { status: 'failed' };
+  }
+};
+
+// Process up to three roll calls concurrently.
+for (
+  let index = 0;
+  index < selectedVotes.length;
+  index += maxConcurrentChecks
+) {
+  const batch = selectedVotes.slice(
+    index,
+    index + maxConcurrentChecks
+  );
+
+  const results = await Promise.all(
+    batch.map(checkVote)
+  );
+
+  for (const result of results) {
+    if (result.status === 'found') {
+      votes.push(result.vote);
+    } else if (result.status === 'failed') {
+      failedChecks++;
+    }
+  }
+}
+
 
     return json({
       success: true,
