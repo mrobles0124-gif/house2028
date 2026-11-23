@@ -44,7 +44,16 @@ export default async (request) => {
 const maxVotesToCheck = 8;
 const maxConcurrentChecks = 3;
 
+const offset = Number(url.searchParams.get('offset') || 0);
 
+if (!Number.isSafeInteger(offset) ||
+    offset < 0 ||
+    offset > 10000 ||
+    offset % 8 !== 0) {
+  return json({
+    error: 'Invalid voting-history offset.'
+  }, 400);
+}
   const controller = new AbortController();
   
 const timer = setTimeout(() => controller.abort(), 25000);
@@ -79,9 +88,12 @@ const timer = setTimeout(() => controller.abort(), 25000);
   try {
     // Request a page of recent roll calls.
     const listData = await getCongressData(
-      `house-vote/${congress}/${session}`,
-      { limit: 20 }
-    );
+  `house-vote/${congress}/${session}`,
+  {
+    limit: maxVotesToCheck,
+    offset
+  }
+);
 
     const listedVotes = Array.isArray(
       listData.houseRollCallVotes
@@ -201,9 +213,18 @@ for (
       session,
       votes,
       count: votes.length,
-      checked: selectedVotes.length,
-      failedChecks,
-      complete: false,
+checked: selectedVotes.length,
+failedChecks,
+complete: false,
+
+pagination: {
+  offset,
+  pageSize: maxVotesToCheck,
+  nextOffset: listData.pagination?.next
+    ? offset + selectedVotes.length
+    : null,
+  hasMore: Boolean(listData.pagination?.next)
+},
       retrievedAt: new Date().toISOString(),
       source: 'Congress.gov House Roll Call Vote API',
       note:
