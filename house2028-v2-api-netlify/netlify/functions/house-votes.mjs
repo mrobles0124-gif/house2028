@@ -103,14 +103,6 @@ const timer = setTimeout(() => controller.abort(), 25000);
 
 // PASTE THE NEW CONCURRENT BATCH LOOP HERE
 
-return json({
-  success: true,
-  bioguideId,
-  congress,
-  session,
-  votes,
-  // ... rest of your existing response
-});
     return json({
       success: true,
       bioguideId,
